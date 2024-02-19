@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -17,13 +18,63 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
+const ca_cert string = "ca.crt"
+const server_cert string = "server.crt"
+const server_key string = "server.key"
+
 func main() {
-	tlsConfig, err := LoadTlSConfig("server.pem", "server-key.pem", "root.pem")
+	//tlsConfig, err := LoadTlSConfig("server.pem", "server-key.pem", "root.pem")
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	// load CA certificate file and add it to list of client CAs
+	caCertFile, err := ioutil.ReadFile(ca_cert)
 	if err != nil {
-		panic(err)
+		log.Fatalf("error reading CA certificate: %v", err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCertFile)
+
+	//	caCertFilebk, err := ioutil.ReadFile("./certs.bk/ca.crt")
+	//	if err != nil {
+	//		log.Fatalf("error reading CA certificate: %v", err)
+	//	}
+	//	caCertPool.AppendCertsFromPEM(caCertFilebk)
+
+	// Create the TLS Config with the CA pool and enable Client certificate validation
+	tlsConfig := &tls.Config{
+		ClientCAs: caCertPool,
+		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			// Always get latest localhost.crt and localhost.key
+			// ex: keeping certificates file somewhere in global location where created certificates updated and this closure function can refer that
+			log.Printf("GetCertificate reloading")
+			cert, err := tls.LoadX509KeyPair(server_cert, server_key)
+			if err != nil {
+				return nil, err
+			}
+			return &cert, nil
+		},
+		//GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+		//	return &newCert, nil
+		//},
+		ClientAuth:               tls.RequireAndVerifyClientCert,
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+		},
 	}
 
-	server := grpc.NewServer(grpc.Creds(tlsConfig), grpc.UnaryInterceptor(MiddlewareHandler))
+	config := credentials.NewTLS(tlsConfig)
+
+	server := grpc.NewServer(grpc.Creds(config), grpc.UnaryInterceptor(MiddlewareHandler))
 
 	greet.RegisterGreetingServer(server, new(GreetServer))
 
