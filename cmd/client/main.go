@@ -6,6 +6,9 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/islishude/grpc-mtls-example/greet"
 	"google.golang.org/grpc"
@@ -30,11 +33,31 @@ func main() {
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
-	resp, err := client.SayHello(context.Background(), &greet.SayHelloRequest{Name: name})
-	if err != nil {
-		panic(err)
+
+	go waitForShutdown()
+
+	for {
+		resp, err := client.SayHello(context.Background(), &greet.SayHelloRequest{Name: name})
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(resp.GetGreet())
+
+		time.Sleep(5 * time.Second)
+
 	}
-	fmt.Println(resp.GetGreet())
+}
+
+func waitForShutdown() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	fmt.Println("Shutting down server...")
+
+	// Perform cleanup and shutdown tasks here
+
+	os.Exit(0)
 }
 
 func LoadTLSConfig(certFile, keyFile, caFile string) (credentials.TransportCredentials, error) {
