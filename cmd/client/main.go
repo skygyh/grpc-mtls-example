@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	tlsConfig, err := LoadTLSConfig("client.pem", "client-key.pem", "root.pem")
+	tlsConfig, err := LoadTLSConfig("client.a.crt", "client.a.key", "ca.crt")
 	if err != nil {
 		panic(err)
 	}
