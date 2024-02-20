@@ -41,7 +41,7 @@ func main() {
 		resp, err := client.SayHello(context.Background(), &greet.SayHelloRequest{Name: name})
 		if err != nil {
 			panic(err)
-		}rt
+		}
 
 		fmt.Println(resp.GetGreet())
 
