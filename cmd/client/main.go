@@ -15,8 +15,9 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+const
 func main() {
-	tlsConfig, err := LoadTLSConfig("client.crt", "client.key", "ca.crt")
+	tlsConfig, err := LoadTLSConfig("./certs/client.crt", "./certs/client.key", "./certs/ca.crt")
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +41,7 @@ func main() {
 		resp, err := client.SayHello(context.Background(), &greet.SayHelloRequest{Name: name})
 		if err != nil {
 			panic(err)
-		}
+		}rt
 
 		fmt.Println(resp.GetGreet())
 
