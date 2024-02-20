@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	tlsConfig, err := LoadTLSConfig("client.a.crt", "client.a.key", "ca.crt")
+	tlsConfig, err := LoadTLSConfig("client.crt", "client.key", "ca.crt")
 	if err != nil {
 		panic(err)
 	}
