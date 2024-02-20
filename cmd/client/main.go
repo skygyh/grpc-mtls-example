@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-const
 func main() {
 	tlsConfig, err := LoadTLSConfig("./certs/client.crt", "./certs/client.key", "./certs/ca.crt")
 	if err != nil {
